@@ -10,11 +10,10 @@
   "authors":
   {
     "name": "Timo Lappalainen",
-    "email": " ",
-    "url": "Kave Oy <www.kave.fi>",
+    "url": "http://www.kave.fi",
     "maintainer": true
   },
-  "version": "4.10.1",
+  "version": "4.12.1",
   "license": "MIT",
   "frameworks": "*",
   "platforms": "*"

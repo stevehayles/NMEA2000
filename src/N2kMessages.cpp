@@ -1,7 +1,7 @@
 /*
 N2kMessages.cpp
 
-Copyright (c) 2015-2019 Timo Lappalainen, Kave Oy, www.kave.fi
+Copyright (c) 2015-2020 Timo Lappalainen, Kave Oy, www.kave.fi
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -191,7 +191,7 @@ void SetN2kPGN127488(tN2kMsg &N2kMsg, unsigned char EngineInstance, double Engin
     N2kMsg.SetPGN(127488L);
     N2kMsg.Priority=2;
     N2kMsg.AddByte(EngineInstance);
-    N2kMsg.Add2ByteDouble(EngineSpeed,0.25);
+    N2kMsg.Add2ByteUDouble(EngineSpeed,0.25);
     N2kMsg.Add2ByteUDouble(EngineBoostPressure, 100);
     N2kMsg.AddByte(EngineTiltTrim);
     N2kMsg.AddByte(0xff); // Reserved
@@ -205,7 +205,7 @@ bool ParseN2kPGN127488(const tN2kMsg &N2kMsg, unsigned char &EngineInstance, dou
   int Index=0;
 
   EngineInstance=N2kMsg.GetByte(Index);
-  EngineSpeed=N2kMsg.Get2ByteDouble(0.25,Index);
+  EngineSpeed=N2kMsg.Get2ByteUDouble(0.25,Index);
   EngineBoostPressure=N2kMsg.Get2ByteUDouble(100,Index);
   EngineTiltTrim=N2kMsg.GetByte(Index);
 
@@ -763,7 +763,7 @@ void SetN2kPGN129029(tN2kMsg &N2kMsg, unsigned char SID, uint16_t DaysSince1970,
     N2kMsg.Add8ByteDouble(Longitude,1e-16);
     N2kMsg.Add8ByteDouble(Altitude,1e-6);
     N2kMsg.AddByte( (((unsigned char) GNSStype) & 0x0f) | (((unsigned char) GNSSmethod) & 0x0f)<<4 );
-    N2kMsg.AddByte(1);  // Integrity 2 bit, reserved 6 bits
+    N2kMsg.AddByte(1 | 0xfc);  // Integrity 2 bit, reserved 6 bits
     N2kMsg.AddByte(nSatellites);
     N2kMsg.Add2ByteDouble(HDOP,0.01);
     N2kMsg.Add2ByteDouble(PDOP,0.01);
@@ -1422,7 +1422,7 @@ void SetN2kPGN130314(tN2kMsg &N2kMsg, unsigned char SID, unsigned char PressureI
   N2kMsg.AddByte(SID);
   N2kMsg.AddByte((unsigned char) PressureInstance);
   N2kMsg.AddByte((unsigned char) PressureSource);
-  N2kMsg.Add4ByteUDouble(ActualPressure,0.1);
+  N2kMsg.Add4ByteDouble(ActualPressure,0.1);
   N2kMsg.AddByte(0xff); // reserved
 }
 
@@ -1433,7 +1433,7 @@ bool ParseN2kPGN130314(const tN2kMsg &N2kMsg, unsigned char &SID, unsigned char 
   SID=N2kMsg.GetByte(Index);
   PressureInstance=N2kMsg.GetByte(Index);
   PressureSource=(tN2kPressureSource)N2kMsg.GetByte(Index);
-  ActualPressure=N2kMsg.Get4ByteUDouble(0.1, Index);
+  ActualPressure=N2kMsg.Get4ByteDouble(0.1, Index);
   return true;
 }
 
@@ -1447,7 +1447,7 @@ void SetN2kPGN130315(tN2kMsg &N2kMsg, unsigned char SID, unsigned char PressureI
   N2kMsg.AddByte(SID);
   N2kMsg.AddByte((unsigned char) PressureInstance);
   N2kMsg.AddByte((unsigned char) PressureSource);
-  N2kMsg.Add4ByteUDouble(SetPressure,0.1);
+  N2kMsg.Add4ByteDouble(SetPressure,0.1);
   N2kMsg.AddByte(0xff); // reserved
 }
 

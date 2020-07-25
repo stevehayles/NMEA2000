@@ -1,7 +1,7 @@
 /*
 NMEA2000.h
 
-Copyright (c) 2015-2018 Timo Lappalainen, Kave Oy, www.kave.fi
+Copyright (c) 2015-2020 Timo Lappalainen, Kave Oy, www.kave.fi
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -79,6 +79,7 @@ address anymore. See also method ReadResetAddressChanged().
 class tNMEA2000
 {
 public:
+  static bool IsProprietaryMessage(unsigned long PGN);
   static void ClearCharBuf(size_t MaxLen, char *buf);
   static void SetCharBuf(const char *str, size_t MaxLen, char *buf);
   static void ClearSetCharBuf(const char *str, size_t MaxLen, char *buf);
@@ -650,6 +651,7 @@ public:
     void DetachMsgHandler(tMsgHandler *_MsgHandler);
     void SetISORqstHandler(bool(*ISORequestHandler)(unsigned long RequestedPGN, unsigned char Requester, int DeviceIndex));           // ISORequest messages
 #if !defined(N2K_NO_GROUP_FUNCTION_SUPPORT)
+    void RemoveGroupFunctionHandler(tN2kGroupFunctionHandler *pGroupFunctionHandler);
     void AddGroupFunctionHandler(tN2kGroupFunctionHandler *pGroupFunctionHandler);
 #endif
     // Read address for current device.
