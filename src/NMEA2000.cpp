@@ -2552,11 +2552,13 @@ bool tNMEA2000::IsAddressClaimStarted(int iDev) {
 
 //*****************************************************************************
 void tNMEA2000::HandleISOAddressClaim(const tN2kMsg &N2kMsg) {
+  if ( N2kMsg.DataLen!=8 || N2kMsg.Destination!=0xff ) return;
   int iDev=FindSourceDeviceIndex(N2kMsg.Source);
   if ( N2kMsg.Source==N2kNullCanBusAddress || iDev==-1 ) return; // if the address is not same as we have, we do nothing
 
   int Index=0;
   uint64_t CallerName=N2kMsg.GetUInt64(Index);
+  if ( CallerName==0 || CallerName==UINT64_MAX ) return;
 
     if (Devices[iDev].DeviceInformation.GetName()<CallerName) { // We can keep our address, so just reclaim it
       SendIsoAddressClaim(0xff,iDev);

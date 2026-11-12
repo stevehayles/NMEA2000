@@ -70,4 +70,12 @@ int main() {
   bus.ParseMessages();
   assert(!bus.outgoing.empty());
   assert(bus.outgoing.back().id == 0x18eeff1eUL);
+
+  // Malformed claims cannot displace our address or provoke a response.
+  bus.outgoing.clear();
+  bus.incoming.push_back({0x18eeff1eUL, 8, {{0, 0, 0, 0, 0, 0, 0, 0}}});
+  bus.incoming.push_back({0x18eeff1eUL, 7, {{1, 0, 0, 0, 0, 0, 0, 0}}});
+  bus.incoming.push_back({0x18ee211eUL, 8, {{1, 0, 0, 0, 0, 0, 0, 0}}});
+  bus.ParseMessages();
+  assert(bus.GetN2kSource() == 0x1e && bus.outgoing.empty());
 }
