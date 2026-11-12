@@ -5,9 +5,6 @@
 #include <cstdio>
 #include <cstdint>
 
-// This wire-vector test has no scheduler; the message constructor still stamps time.
-uint32_t N2kMillis() { return 0; }
-
 namespace {
 
 void expect_dimension_bytes(const tN2kMsg &message, int offset, uint16_t raw) {

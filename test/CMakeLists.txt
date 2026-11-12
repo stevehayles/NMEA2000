@@ -91,7 +91,7 @@ target_link_libraries(SeasmartOverreadTests catch)
 target_link_libraries(SeasmartOverreadTests nmea2000)
 add_test(SeasmartOverread SeasmartOverreadTests)
 
-add_executable(N2kAisDimensionTests N2kAisDimensionTest.cpp)
+add_executable(N2kAisDimensionTests N2kAisDimensionTest.cpp millis.cpp)
 target_compile_definitions(N2kAisDimensionTests PRIVATE N2K_AIS_UNSIGNED_DIMENSIONS=1)
 target_link_libraries(N2kAisDimensionTests nmea2000)
 add_test(N2kAisDimensions N2kAisDimensionTests)
