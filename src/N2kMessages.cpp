@@ -305,6 +305,30 @@ bool ParseN2kPGN127250(const tN2kMsg &N2kMsg, unsigned char &SID, double &Headin
   return true;
 }
 
+void SetN2kPGN127250(tN2kMsg &N2kMsg, unsigned char SID, float Heading, float Deviation, float Variation, tN2kHeadingReference ref) {
+    N2kMsg.SetPGN(127250L);
+    N2kMsg.Priority=2;
+    N2kMsg.AddByte(SID);
+    N2kMsg.Add2ByteUSingle(Heading,0.0001f);
+    N2kMsg.Add2ByteSingle(Deviation,0.0001f);
+    N2kMsg.Add2ByteSingle(Variation,0.0001f);
+    N2kMsg.AddByte(0xfc | ref);
+}
+
+bool ParseN2kPGN127250(const tN2kMsg &N2kMsg, unsigned char &SID, float &Heading, float &Deviation, float &Variation, tN2kHeadingReference &ref) {
+  if (N2kMsg.PGN!=127250L) return false;
+
+  int Index=0;
+
+  SID=N2kMsg.GetByte(Index);
+  Heading=N2kMsg.Get2ByteUSingle(0.0001f,Index);
+  Deviation=N2kMsg.Get2ByteSingle(0.0001f,Index);
+  Variation=N2kMsg.Get2ByteSingle(0.0001f,Index);
+  ref=(tN2kHeadingReference)(N2kMsg.GetByte(Index)&0x03);
+
+  return true;
+}
+
 //*****************************************************************************
 // Rate of turn
 // Angles should be in radians
@@ -392,6 +416,28 @@ bool ParseN2kPGN127257(const tN2kMsg &N2kMsg, unsigned char &SID, double &Yaw, d
   return true;
 }
 
+void SetN2kPGN127257(tN2kMsg &N2kMsg, unsigned char SID, float Yaw, float Pitch, float Roll) {
+    N2kMsg.SetPGN(127257L);
+    N2kMsg.Priority=3;
+    N2kMsg.AddByte(SID);
+    N2kMsg.Add2ByteSingle(Yaw,0.0001f);
+    N2kMsg.Add2ByteSingle(Pitch,0.0001f);
+    N2kMsg.Add2ByteSingle(Roll,0.0001f);
+    N2kMsg.AddByte(0xff); // Reserved
+}
+
+bool ParseN2kPGN127257(const tN2kMsg &N2kMsg, unsigned char &SID, float &Yaw, float &Pitch, float &Roll){
+  if (N2kMsg.PGN!=127257L) return false;
+
+  int Index=0;
+  SID=N2kMsg.GetByte(Index);
+  Yaw=N2kMsg.Get2ByteSingle(0.0001f,Index);
+  Pitch=N2kMsg.Get2ByteSingle(0.0001f,Index);
+  Roll=N2kMsg.Get2ByteSingle(0.0001f,Index);
+
+  return true;
+}
+
 //*****************************************************************************
 // Magnetic variation
 void SetN2kPGN127258(tN2kMsg &N2kMsg, unsigned char SID, tN2kMagneticVariation Source, uint16_t DaysSince1970, double Variation) {
@@ -412,6 +458,28 @@ bool ParseN2kPGN127258(const tN2kMsg &N2kMsg, unsigned char &SID, tN2kMagneticVa
   Source=(tN2kMagneticVariation) (N2kMsg.GetByte(Index) & 0x0f);
   DaysSince1970=N2kMsg.Get2ByteUInt(Index);
   Variation=N2kMsg.Get2ByteDouble(0.0001, Index);
+
+  return true;
+}
+
+void SetN2kPGN127258(tN2kMsg &N2kMsg, unsigned char SID, tN2kMagneticVariation Source, uint16_t DaysSince1970, float Variation) {
+  N2kMsg.SetPGN(127258L);
+  N2kMsg.Priority=6;
+  N2kMsg.AddByte(SID);
+  N2kMsg.AddByte(Source & 0x0f);
+  N2kMsg.Add2ByteUInt(DaysSince1970);
+  N2kMsg.Add2ByteSingle(Variation, 0.0001f);
+  N2kMsg.Add2ByteUInt(0xffff);
+}
+
+bool ParseN2kPGN127258(const tN2kMsg &N2kMsg, unsigned char &SID, tN2kMagneticVariation &Source, uint16_t &DaysSince1970, float &Variation) {
+  if (N2kMsg.PGN!=127258L) return false;
+
+  int Index=0;
+  SID=N2kMsg.GetByte(Index);
+  Source=(tN2kMagneticVariation) (N2kMsg.GetByte(Index) & 0x0f);
+  DaysSince1970=N2kMsg.Get2ByteUInt(Index);
+  Variation=N2kMsg.Get2ByteSingle(0.0001f, Index);
 
   return true;
 }
@@ -969,6 +1037,30 @@ bool ParseN2kPGN128259(const tN2kMsg &N2kMsg, unsigned char &SID, double &WaterR
   SID=N2kMsg.GetByte(Index);
   WaterReferenced=N2kMsg.Get2ByteUDouble(0.01,Index);
   GroundReferenced=N2kMsg.Get2ByteUDouble(0.01,Index);
+  SWRT=(tN2kSpeedWaterReferenceType)(N2kMsg.GetByte(Index)&0x0F);
+
+  return true;
+}
+
+void SetN2kPGN128259(tN2kMsg &N2kMsg, unsigned char SID, float WaterReferenced, float GroundReferenced, tN2kSpeedWaterReferenceType SWRT) {
+    N2kMsg.SetPGN(128259L);
+    N2kMsg.Priority=2;
+    N2kMsg.AddByte(SID);
+    N2kMsg.Add2ByteUSingle(WaterReferenced,0.01f);
+    N2kMsg.Add2ByteUSingle(GroundReferenced,0.01f);
+    N2kMsg.AddByte(SWRT);
+    N2kMsg.AddByte(0xff); // Reserved
+    N2kMsg.AddByte(0xff); // Reserved
+}
+
+bool ParseN2kPGN128259(const tN2kMsg &N2kMsg, unsigned char &SID, float &WaterReferenced, float &GroundReferenced, tN2kSpeedWaterReferenceType &SWRT) {
+  if (N2kMsg.PGN!=128259L) return false;
+
+  int Index=0;
+
+  SID=N2kMsg.GetByte(Index);
+  WaterReferenced=N2kMsg.Get2ByteUSingle(0.01f,Index);
+  GroundReferenced=N2kMsg.Get2ByteUSingle(0.01f,Index);
   SWRT=(tN2kSpeedWaterReferenceType)(N2kMsg.GetByte(Index)&0x0F);
 
   return true;
@@ -1931,6 +2023,28 @@ bool ParseN2kPGN130306(const tN2kMsg &N2kMsg, unsigned char &SID, double &WindSp
   SID=N2kMsg.GetByte(Index);
   WindSpeed=N2kMsg.Get2ByteUDouble(0.01,Index);
   WindAngle=N2kMsg.Get2ByteUDouble(0.0001,Index);
+  WindReference=(tN2kWindReference)(N2kMsg.GetByte(Index)&0x07);
+
+  return true;
+}
+
+void SetN2kPGN130306(tN2kMsg &N2kMsg, unsigned char SID, float WindSpeed, float WindAngle, tN2kWindReference WindReference) {
+    N2kMsg.SetPGN(130306L);
+    N2kMsg.Priority=2;
+    N2kMsg.AddByte(SID);
+    N2kMsg.Add2ByteUSingle(WindSpeed,0.01f);
+    N2kMsg.Add2ByteUSingle(WindAngle,0.0001f);
+    N2kMsg.AddByte((unsigned char)WindReference);
+    N2kMsg.AddByte(0xff); // Reserved
+    N2kMsg.AddByte(0xff); // Reserved
+}
+
+bool ParseN2kPGN130306(const tN2kMsg &N2kMsg, unsigned char &SID, float &WindSpeed, float &WindAngle, tN2kWindReference &WindReference) {
+  if (N2kMsg.PGN!=130306L) return false;
+  int Index=0;
+  SID=N2kMsg.GetByte(Index);
+  WindSpeed=N2kMsg.Get2ByteUSingle(0.01f,Index);
+  WindAngle=N2kMsg.Get2ByteUSingle(0.0001f,Index);
   WindReference=(tN2kWindReference)(N2kMsg.GetByte(Index)&0x07);
 
   return true;

@@ -58,6 +58,7 @@
 #include "N2kTypes.h"
 #include <string.h>
 #include <stdint.h>
+#include <type_traits>
 
 /************************************************************************//**
  * \brief Converting a value from Rad to Deg
@@ -67,11 +68,46 @@
 inline double RadToDeg(double v) { return N2kIsNA(v)?v:v*180.0L/3.1415926535897932384626433832795L; }
 
 /************************************************************************//**
+ * \brief Converting a value from Rad to Deg (single precision)
+ *
+ * All arithmetic is performed in float so the conversion stays on the
+ * hardware FPU. If the input is the NMEA2000 "not available" value
+ * (N2kFloatNA), it is passed through unchanged rather than converted.
+ *
+ * \param   v   Angle in radians, or N2kFloatNA
+ * \return      Angle in degrees, or N2kFloatNA if the input was not available
+ */
+inline float RadToDeg(float v) { return N2kIsNA(v) ? v : v * (180.0f / 3.14159265f); }
+
+/************************************************************************//**
  * \brief Converting a value from Deg to Rad
  * \param   v   Input value in [deg]
  * \return      Corresponding value in [rad]
  */
 inline double DegToRad(double v) { return N2kIsNA(v)?v:v/180.0L*3.1415926535897932384626433832795L; }
+
+/************************************************************************//**
+ * \brief Converting a value from Deg to Rad (single precision)
+ *
+ * All arithmetic is performed in float so the conversion stays on the
+ * hardware FPU. If the input is the NMEA2000 "not available" value
+ * (N2kFloatNA), it is passed through unchanged rather than converted.
+ *
+ * \param   v   Angle in degrees, or N2kFloatNA
+ * \return      Angle in radians, or N2kFloatNA if the input was not available
+ */
+inline float DegToRad(float v) { return N2kIsNA(v) ? v : v * (3.14159265f / 180.0f); }
+
+// Preserve the double conversion used by integral call sites when float
+// overloads are available as well.
+template <typename T>
+inline typename std::enable_if<std::is_integral<T>::value, double>::type RadToDeg(T v) {
+  return RadToDeg(static_cast<double>(v));
+}
+template <typename T>
+inline typename std::enable_if<std::is_integral<T>::value, double>::type DegToRad(T v) {
+  return DegToRad(static_cast<double>(v));
+}
 
 /************************************************************************//**
  * \brief Converting a value from Celsius to Kelvin
@@ -739,6 +775,7 @@ inline bool ParseN2kRudder(const tN2kMsg &N2kMsg, double &RudderPosition) {
  *                    of \ref tN2kHeadingReference.
  */
 void SetN2kPGN127250(tN2kMsg &N2kMsg, unsigned char SID, double Heading, double Deviation, double Variation, tN2kHeadingReference ref);
+void SetN2kPGN127250(tN2kMsg &N2kMsg, unsigned char SID, float Heading, float Deviation, float Variation, tN2kHeadingReference ref);
 
 /************************************************************************//**
  * \brief Setting up Message "Vessel Heading" - PGN 127250
@@ -754,11 +791,33 @@ inline void SetN2kTrueHeading(tN2kMsg &N2kMsg, unsigned char SID, double Heading
 /************************************************************************//**
  * \brief Setting up Message "Vessel Heading" - PGN 127250
  * \ingroup group_msgSetUp
+ *
+ * Single precision alias of PGN 127250. This alias was introduced to improve
+ * the readability of the source code. See parameter details on \ref SetN2kPGN127250
+ */
+inline void SetN2kTrueHeading(tN2kMsg &N2kMsg, unsigned char SID, float Heading) {
+  SetN2kPGN127250(N2kMsg,SID,Heading,N2kFloatNA,N2kFloatNA,N2khr_true);
+}
+
+/************************************************************************//**
+ * \brief Setting up Message "Vessel Heading" - PGN 127250
+ * \ingroup group_msgSetUp
  * 
  * Alias of PGN 127250. This alias was introduced to improve the readability
  * of the source code. See parameter details on \ref SetN2kPGN127250
   */
 inline void SetN2kMagneticHeading(tN2kMsg &N2kMsg, unsigned char SID, double Heading, double Deviation=N2kDoubleNA, double Variation=N2kDoubleNA) {
+  SetN2kPGN127250(N2kMsg,SID,Heading,Deviation,Variation,N2khr_magnetic);
+}
+
+/************************************************************************//**
+ * \brief Setting up Message "Vessel Heading" - PGN 127250
+ * \ingroup group_msgSetUp
+ *
+ * Single precision alias of PGN 127250. This alias was introduced to improve
+ * the readability of the source code. See parameter details on \ref SetN2kPGN127250
+ */
+inline void SetN2kMagneticHeading(tN2kMsg &N2kMsg, unsigned char SID, float Heading, float Deviation=N2kFloatNA, float Variation=N2kFloatNA) {
   SetN2kPGN127250(N2kMsg,SID,Heading,Deviation,Variation,N2khr_magnetic);
 }
 
@@ -786,6 +845,7 @@ inline void SetN2kMagneticHeading(tN2kMsg &N2kMsg, unsigned char SID, double Hea
  * 
  */
 bool ParseN2kPGN127250(const tN2kMsg &N2kMsg, unsigned char &SID, double &Heading, double &Deviation, double &Variation, tN2kHeadingReference &ref);
+bool ParseN2kPGN127250(const tN2kMsg &N2kMsg, unsigned char &SID, float &Heading, float &Deviation, float &Variation, tN2kHeadingReference &ref);
 
 /************************************************************************//**
  * \brief Parsing the content of a "Vessel Heading" 
@@ -796,6 +856,18 @@ bool ParseN2kPGN127250(const tN2kMsg &N2kMsg, unsigned char &SID, double &Headin
  * of the source code. See parameter details on \ref ParseN2kPGN127250 
  */
 inline bool ParseN2kHeading(const tN2kMsg &N2kMsg, unsigned char &SID, double &Heading, double &Deviation, double &Variation, tN2kHeadingReference &ref) {
+  return ParseN2kPGN127250(N2kMsg,SID,Heading,Deviation,Variation,ref);
+}
+
+/************************************************************************//**
+ * \brief Parsing the content of a "Vessel Heading"
+ *        message - PGN 127250
+ * \ingroup group_msgParsers
+ *
+ * Single precision alias of PGN 127250. This alias was introduced to improve
+ * the readability of the source code. See parameter details on \ref ParseN2kPGN127250
+ */
+inline bool ParseN2kHeading(const tN2kMsg &N2kMsg, unsigned char &SID, float &Heading, float &Deviation, float &Variation, tN2kHeadingReference &ref) {
   return ParseN2kPGN127250(N2kMsg,SID,Heading,Deviation,Variation,ref);
 }
 
@@ -953,6 +1025,7 @@ inline bool ParseN2kHeave(const tN2kMsg &N2kMsg, unsigned char &SID, double &Hea
  * 
  */
 void SetN2kPGN127257(tN2kMsg &N2kMsg, unsigned char SID, double Yaw, double Pitch, double Roll);
+void SetN2kPGN127257(tN2kMsg &N2kMsg, unsigned char SID, float Yaw, float Pitch, float Roll);
 
 /************************************************************************//**
  * \brief Setting up Message "Attitude" - PGN 127257
@@ -962,6 +1035,17 @@ void SetN2kPGN127257(tN2kMsg &N2kMsg, unsigned char SID, double Yaw, double Pitc
  * of the source code. See parameter details on \ref SetN2kPGN127257
   */
 inline void SetN2kAttitude(tN2kMsg &N2kMsg, unsigned char SID, double Yaw, double Pitch, double Roll) {
+  SetN2kPGN127257(N2kMsg,SID, Yaw, Pitch, Roll);
+}
+
+/************************************************************************//**
+ * \brief Setting up Message "Attitude" - PGN 127257
+ * \ingroup group_msgSetUp
+ *
+ * Single precision alias of PGN 127257. This alias was introduced to improve
+ * the readability of the source code. See parameter details on \ref SetN2kPGN127257
+ */
+inline void SetN2kAttitude(tN2kMsg &N2kMsg, unsigned char SID, float Yaw, float Pitch, float Roll) {
   SetN2kPGN127257(N2kMsg,SID, Yaw, Pitch, Roll);
 }
 
@@ -985,6 +1069,7 @@ inline void SetN2kAttitude(tN2kMsg &N2kMsg, unsigned char SID, double Yaw, doubl
  * 
  */
 bool ParseN2kPGN127257(const tN2kMsg &N2kMsg, unsigned char &SID, double &Yaw, double &Pitch, double &Roll);
+bool ParseN2kPGN127257(const tN2kMsg &N2kMsg, unsigned char &SID, float &Yaw, float &Pitch, float &Roll);
 
 /************************************************************************//**
  * \brief Parsing the content of a "Attitude" 
@@ -995,6 +1080,18 @@ bool ParseN2kPGN127257(const tN2kMsg &N2kMsg, unsigned char &SID, double &Yaw, d
  * of the source code. See parameter details on \ref ParseN2kPGN127257 
  */
 inline bool ParseN2kAttitude(const tN2kMsg &N2kMsg, unsigned char &SID, double &Yaw, double &Pitch, double &Roll) {
+  return ParseN2kPGN127257(N2kMsg,SID, Yaw, Pitch, Roll);
+}
+
+/************************************************************************//**
+ * \brief Parsing the content of a "Attitude"
+ *        message - PGN 127257
+ * \ingroup group_msgParsers
+ *
+ * Single precision alias of PGN 127257. This alias was introduced to improve
+ * the readability of the source code. See parameter details on \ref ParseN2kPGN127257
+ */
+inline bool ParseN2kAttitude(const tN2kMsg &N2kMsg, unsigned char &SID, float &Yaw, float &Pitch, float &Roll) {
   return ParseN2kPGN127257(N2kMsg,SID, Yaw, Pitch, Roll);
 }
 
@@ -1020,6 +1117,7 @@ inline bool ParseN2kAttitude(const tN2kMsg &N2kMsg, unsigned char &SID, double &
  * 
  */
 void SetN2kPGN127258(tN2kMsg &N2kMsg, unsigned char SID, tN2kMagneticVariation Source, uint16_t DaysSince1970, double Variation);
+void SetN2kPGN127258(tN2kMsg &N2kMsg, unsigned char SID, tN2kMagneticVariation Source, uint16_t DaysSince1970, float Variation);
 
 /************************************************************************//**
  * \brief Setting up Message "Magnetic Variation" - PGN 127258
@@ -1029,6 +1127,17 @@ void SetN2kPGN127258(tN2kMsg &N2kMsg, unsigned char SID, tN2kMagneticVariation S
  * of the source code. See parameter details on \ref SetN2kPGN127258
   */
 inline void SetN2kMagneticVariation(tN2kMsg &N2kMsg, unsigned char SID, tN2kMagneticVariation Source, uint16_t DaysSince1970, double Variation) {
+  SetN2kPGN127258(N2kMsg, SID, Source, DaysSince1970, Variation);
+}
+
+/************************************************************************//**
+ * \brief Setting up Message "Magnetic Variation" - PGN 127258
+ * \ingroup group_msgSetUp
+ *
+ * Single precision alias of PGN 127258. This alias was introduced to improve
+ * the readability of the source code. See parameter details on \ref SetN2kPGN127258
+ */
+inline void SetN2kMagneticVariation(tN2kMsg &N2kMsg, unsigned char SID, tN2kMagneticVariation Source, uint16_t DaysSince1970, float Variation) {
   SetN2kPGN127258(N2kMsg, SID, Source, DaysSince1970, Variation);
 }
 
@@ -1053,6 +1162,7 @@ inline void SetN2kMagneticVariation(tN2kMsg &N2kMsg, unsigned char SID, tN2kMagn
  * 
  */
 bool ParseN2kPGN127258(const tN2kMsg &N2kMsg, unsigned char &SID, tN2kMagneticVariation &Source, uint16_t &DaysSince1970, double &Variation);
+bool ParseN2kPGN127258(const tN2kMsg &N2kMsg, unsigned char &SID, tN2kMagneticVariation &Source, uint16_t &DaysSince1970, float &Variation);
 
 /************************************************************************//**
  * \brief Parsing the content of a "Magnetic Variation" 
@@ -1063,6 +1173,18 @@ bool ParseN2kPGN127258(const tN2kMsg &N2kMsg, unsigned char &SID, tN2kMagneticVa
  * of the source code. See parameter details on \ref ParseN2kPGN127258 
  */
 inline bool ParseN2kMagneticVariation(const tN2kMsg &N2kMsg, unsigned char &SID, tN2kMagneticVariation &Source, uint16_t &DaysSince1970, double &Variation) {
+  return ParseN2kPGN127258(N2kMsg, SID, Source, DaysSince1970, Variation);
+}
+
+/************************************************************************//**
+ * \brief Parsing the content of a "Magnetic Variation"
+ *        message - PGN 127258
+ * \ingroup group_msgParsers
+ *
+ * Single precision alias of PGN 127258. This alias was introduced to improve
+ * the readability of the source code. See parameter details on \ref ParseN2kPGN127258
+ */
+inline bool ParseN2kMagneticVariation(const tN2kMsg &N2kMsg, unsigned char &SID, tN2kMagneticVariation &Source, uint16_t &DaysSince1970, float &Variation) {
   return ParseN2kPGN127258(N2kMsg, SID, Source, DaysSince1970, Variation);
 }
 
@@ -2572,6 +2694,7 @@ inline bool ParseN2kLeeway(const tN2kMsg &N2kMsg, unsigned char &SID, double &Le
  *         this could be added for the future.
  */
 void SetN2kPGN128259(tN2kMsg &N2kMsg, unsigned char SID, double WaterReferenced, double GroundReferenced=N2kDoubleNA, tN2kSpeedWaterReferenceType SWRT=N2kSWRT_Paddle_wheel);
+void SetN2kPGN128259(tN2kMsg &N2kMsg, unsigned char SID, float WaterReferenced, float GroundReferenced=N2kFloatNA, tN2kSpeedWaterReferenceType SWRT=N2kSWRT_Paddle_wheel);
 
 /************************************************************************//**
  * \brief Setting up Message "Boat Speed, Water Referenced" - PGN 128259
@@ -2581,6 +2704,17 @@ void SetN2kPGN128259(tN2kMsg &N2kMsg, unsigned char SID, double WaterReferenced,
  * of the source code. See parameter details on \ref SetN2kPGN128259
   */
 inline void SetN2kBoatSpeed(tN2kMsg &N2kMsg, unsigned char SID, double WaterReferenced, double GroundReferenced=N2kDoubleNA, tN2kSpeedWaterReferenceType SWRT=N2kSWRT_Paddle_wheel) {
+  SetN2kPGN128259(N2kMsg,SID,WaterReferenced,GroundReferenced,SWRT);
+}
+
+/************************************************************************//**
+ * \brief Setting up Message "Boat Speed, Water Referenced" - PGN 128259
+ * \ingroup group_msgSetUp
+ *
+ * Single precision alias of PGN 128259. This alias was introduced to improve
+ * the readability of the source code. See parameter details on \ref SetN2kPGN128259
+ */
+inline void SetN2kBoatSpeed(tN2kMsg &N2kMsg, unsigned char SID, float WaterReferenced, float GroundReferenced=N2kFloatNA, tN2kSpeedWaterReferenceType SWRT=N2kSWRT_Paddle_wheel) {
   SetN2kPGN128259(N2kMsg,SID,WaterReferenced,GroundReferenced,SWRT);
 }
 
@@ -2604,6 +2738,7 @@ inline void SetN2kBoatSpeed(tN2kMsg &N2kMsg, unsigned char SID, double WaterRefe
  *
  */
 bool ParseN2kPGN128259(const tN2kMsg &N2kMsg, unsigned char &SID, double &WaterReferenced, double &GroundReferenced, tN2kSpeedWaterReferenceType &SWRT);
+bool ParseN2kPGN128259(const tN2kMsg &N2kMsg, unsigned char &SID, float &WaterReferenced, float &GroundReferenced, tN2kSpeedWaterReferenceType &SWRT);
 
 /************************************************************************//**
  * \brief Parsing the content of a "Boat Speed, Water Referenced" 
@@ -2614,6 +2749,18 @@ bool ParseN2kPGN128259(const tN2kMsg &N2kMsg, unsigned char &SID, double &WaterR
  * of the source code. See parameter details on \ref ParseN2kPGN128259 
  */
 inline bool ParseN2kBoatSpeed(const tN2kMsg &N2kMsg, unsigned char &SID, double &WaterReferenced, double &GroundReferenced, tN2kSpeedWaterReferenceType &SWRT) {
+  return ParseN2kPGN128259(N2kMsg, SID, WaterReferenced, GroundReferenced, SWRT);
+}
+
+/************************************************************************//**
+ * \brief Parsing the content of a "Boat Speed, Water Referenced"
+ *        message - PGN 128259
+ * \ingroup group_msgParsers
+ *
+ * Single precision alias of PGN 128259. This alias was introduced to improve
+ * the readability of the source code. See parameter details on \ref ParseN2kPGN128259
+ */
+inline bool ParseN2kBoatSpeed(const tN2kMsg &N2kMsg, unsigned char &SID, float &WaterReferenced, float &GroundReferenced, tN2kSpeedWaterReferenceType &SWRT) {
   return ParseN2kPGN128259(N2kMsg, SID, WaterReferenced, GroundReferenced, SWRT);
 }
 
@@ -5054,6 +5201,7 @@ inline bool AppendN2kWaypointList(tN2kMsg &N2kMsg, uint16_t ID, char* Name, doub
  * 
  */
 void SetN2kPGN130306(tN2kMsg &N2kMsg, unsigned char SID, double WindSpeed, double WindAngle, tN2kWindReference WindReference);
+void SetN2kPGN130306(tN2kMsg &N2kMsg, unsigned char SID, float WindSpeed, float WindAngle, tN2kWindReference WindReference);
 
 /************************************************************************//**
  * \brief Setting up Message "Wind Data" - PGN 130306
@@ -5063,6 +5211,17 @@ void SetN2kPGN130306(tN2kMsg &N2kMsg, unsigned char SID, double WindSpeed, doubl
  * of the source code. See parameter details on \ref SetN2kPGN130306
   */
 inline void SetN2kWindSpeed(tN2kMsg &N2kMsg, unsigned char SID, double WindSpeed, double WindAngle, tN2kWindReference WindReference) {
+  SetN2kPGN130306(N2kMsg,SID,WindSpeed,WindAngle,WindReference);
+}
+
+/************************************************************************//**
+ * \brief Setting up Message "Wind Data" - PGN 130306
+ * \ingroup group_msgSetUp
+ *
+ * Single precision alias of PGN 130306. This alias was introduced to improve
+ * the readability of the source code. See parameter details on \ref SetN2kPGN130306
+ */
+inline void SetN2kWindSpeed(tN2kMsg &N2kMsg, unsigned char SID, float WindSpeed, float WindAngle, tN2kWindReference WindReference) {
   SetN2kPGN130306(N2kMsg,SID,WindSpeed,WindAngle,WindReference);
 }
 
@@ -5091,6 +5250,7 @@ inline void SetN2kWindSpeed(tN2kMsg &N2kMsg, unsigned char SID, double WindSpeed
  * 
  */
 bool ParseN2kPGN130306(const tN2kMsg &N2kMsg, unsigned char &SID, double &WindSpeed, double &WindAngle, tN2kWindReference &WindReference);
+bool ParseN2kPGN130306(const tN2kMsg &N2kMsg, unsigned char &SID, float &WindSpeed, float &WindAngle, tN2kWindReference &WindReference);
 
 /************************************************************************//**
  * \brief Parsing the content of a "Wind Data" 
@@ -5101,6 +5261,18 @@ bool ParseN2kPGN130306(const tN2kMsg &N2kMsg, unsigned char &SID, double &WindSp
  * of the source code. See parameter details on \ref ParseN2kPGN130306 
  */
 inline bool ParseN2kWindSpeed(const tN2kMsg &N2kMsg, unsigned char &SID, double &WindSpeed, double &WindAngle, tN2kWindReference &WindReference) {
+  return ParseN2kPGN130306(N2kMsg,SID,WindSpeed,WindAngle,WindReference);
+}
+
+/************************************************************************//**
+ * \brief Parsing the content of a "Wind Data"
+ *        message - PGN 130306
+ * \ingroup group_msgParsers
+ *
+ * Single precision alias of PGN 130306. This alias was introduced to improve
+ * the readability of the source code. See parameter details on \ref ParseN2kPGN130306
+ */
+inline bool ParseN2kWindSpeed(const tN2kMsg &N2kMsg, unsigned char &SID, float &WindSpeed, float &WindAngle, tN2kWindReference &WindReference) {
   return ParseN2kPGN130306(N2kMsg,SID,WindSpeed,WindAngle,WindReference);
 }
 
