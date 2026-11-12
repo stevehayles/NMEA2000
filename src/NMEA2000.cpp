@@ -2459,7 +2459,8 @@ void tNMEA2000::HandleISORequest(const tN2kMsg &N2kMsg) {
 
     if ( !tNMEA2000::IsBroadcast(N2kMsg.Destination) && iDev==-1) return; // if destination is not for us, we do nothing
 
-    ParseN2kPGNISORequest(N2kMsg,RequestedPGN);
+    // Other J1939 devices can use this PGN with payloads that are not ISO requests.
+    if ( !ParseN2kPGNISORequest(N2kMsg,RequestedPGN) || RequestedPGN>0x3ffff ) return;
     N2kMsgDbgStart("ISO request: "); N2kMsgDbgln(RequestedPGN);
     if (tNMEA2000::IsBroadcast(N2kMsg.Destination)) { // broadcast -> respond from all devices
       for (iDev=0; iDev<DeviceCount; iDev++) RespondISORequest(N2kMsg,false,RequestedPGN,iDev);
