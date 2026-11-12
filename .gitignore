@@ -44,6 +44,7 @@ Temporary Items
 
 # CMake
 build
+build-*/
 tags
 
 # Added by Matthias
