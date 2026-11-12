@@ -547,6 +547,7 @@ class tN2kGroupFunctionHandler {
      *                    Group function
      */
     tN2kGroupFunctionHandler(tNMEA2000 *_pNMEA2000, unsigned long _PGN);
+    virtual ~tN2kGroupFunctionHandler() = default;
 
     /**********************************************************************//**
      * \brief Handle group function message

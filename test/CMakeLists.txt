@@ -63,6 +63,13 @@ target_link_libraries(N2kDeviceListTests catch)
 target_link_libraries(N2kDeviceListTests nmea2000)
 add_test(N2kDeviceList N2kDeviceListTests)
 
+add_executable(N2kGroupFunctionDestructorTests
+  N2kGroupFunctionDestructorTest.cpp
+  millis.cpp
+)
+target_link_libraries(N2kGroupFunctionDestructorTests catch nmea2000)
+add_test(N2kGroupFunctionDestructor N2kGroupFunctionDestructorTests)
+
 add_executable(SeasmartOverreadTests
   SeasmartOverreadTest.cpp
   millis.cpp
