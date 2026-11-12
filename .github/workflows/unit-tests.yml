@@ -35,6 +35,18 @@ jobs:
   test:
     name: Run unit tests  # Descriptive name shown in GitHub UI
     runs-on: ubuntu-latest  # Use Ubuntu Linux virtual machine
+    strategy:
+      matrix:
+        include:
+          - timer: linux64
+            millis32: OFF
+            esp64: OFF
+          - timer: millis32
+            millis32: ON
+            esp64: OFF
+          - timer: esp64
+            millis32: OFF
+            esp64: ON
 
     # TESTING STEPS: The actual work done by this workflow
     steps:
@@ -46,7 +58,7 @@ jobs:
       # Configure CMake in a 'build' subdirectory.
       # This reads CMakeLists.txt and sets up the build environment
       # including finding dependencies, setting compiler flags, etc.
-      run: cmake -B ${{github.workspace}}/build
+      run: cmake -B ${{github.workspace}}/build -DN2K_TEST_TIMER_32=${{ matrix.millis32 }} -DN2K_TEST_TIMER_ESP=${{ matrix.esp64 }}
 
     # STEP 3: Compile the library and test executables
     - name: Build

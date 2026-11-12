@@ -61,6 +61,7 @@ bool delivered_after(uint64_t start, uint64_t quiet, bool poll_quiet_bus = true)
   assert(received_wind == 0);
 
   if (poll_quiet_bus) {
+    // A 32-bit millis extender can count wraps only when polled within each wrap.
     for (uint64_t elapsed = 600000; elapsed < quiet; elapsed += 600000) {
       now_ms = start + elapsed;
       bus.ParseMessages();
@@ -73,14 +74,24 @@ bool delivered_after(uint64_t start, uint64_t quiet, bool poll_quiet_bus = true)
 }
 } // namespace
 
+#if defined(N2K_TEST_TIMER_32)
+extern "C" uint32_t millis() { return static_cast<uint32_t>(now_ms); }
+#elif defined(N2K_TEST_TIMER_ESP)
+uint64_t tN2kSyncScheduler::SyncOffset = 0;
+#else
 uint64_t tN2kSyncScheduler::SyncOffset = 0;
 uint64_t N2kMillis64() { return now_ms; }
 uint32_t N2kMillis() { return static_cast<uint32_t>(now_ms); }
+#endif
 extern "C" int64_t esp_timer_get_time() { return static_cast<int64_t>(now_ms * 1000); }
 extern "C" bool rtc_try_get_timeofday(double *) { return false; }
 
 int main() {
+#if defined(N2K_TEST_TIMER_32)
+  static_assert(sizeof(tN2kSchedulerTime) == 4, "millis mode uses the 32-bit scheduler");
+#else
   static_assert(sizeof(tN2kSchedulerTime) == 8, "Linux uses the 64-bit scheduler");
+#endif
   constexpr uint64_t wrap = uint64_t{1} << 32;
   for (const uint64_t start : {uint64_t{1000}, wrap / 2 - 50, wrap - 50}) {
     assert(!delivered_after(start, 99));

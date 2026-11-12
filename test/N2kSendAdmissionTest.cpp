@@ -52,9 +52,15 @@ tN2kMsg message(unsigned long pgn, unsigned length) {
 }
 } // namespace
 
+#if defined(N2K_TEST_TIMER_32)
+extern "C" uint32_t millis() { return static_cast<uint32_t>(now_ms); }
+#elif defined(N2K_TEST_TIMER_ESP)
+uint64_t tN2kSyncScheduler::SyncOffset = 0;
+#else
 uint64_t tN2kSyncScheduler::SyncOffset = 0;
 uint64_t N2kMillis64() { return now_ms; }
 uint32_t N2kMillis() { return static_cast<uint32_t>(now_ms); }
+#endif
 extern "C" int64_t esp_timer_get_time() { return static_cast<int64_t>(now_ms * 1000); }
 extern "C" bool rtc_try_get_timeofday(double *) { return false; }
 

@@ -31,4 +31,10 @@ uint32_t millis() {
   return 42;
 }
 
+#if defined(N2K_TEST_TIMER_ESP)
+int64_t esp_timer_get_time() {
+  return 42000;
+}
+#endif
+
 }

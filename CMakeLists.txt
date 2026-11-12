@@ -30,12 +30,22 @@ endif()
 
 # else probably running unit tests with catch on a host
 project(NMEA2000)
+option(N2K_TEST_TIMER_32 "Test the millis-backed 32-bit scheduler path on a Linux host" OFF)
+option(N2K_TEST_TIMER_ESP "Test the ESP 64-bit timer path with a host clock stub" OFF)
 add_compile_options(
   -Wall
   -Werror
   -std=c++11
   -g
 )
+if(N2K_TEST_TIMER_32)
+  # Use the same non-ESP 32-bit scheduler and millis rollover path as Arduino.
+  add_compile_options(-U__linux__ -U__linux -Ulinux -DN2K_TEST_TIMER_32=1)
+endif()
+if(N2K_TEST_TIMER_ESP)
+  add_compile_options(-DARDUINO_ARCH_ESP32=1 -DN2K_TEST_TIMER_ESP=1)
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR}/test/fake-esp)
+endif()
 
 enable_testing()
 add_subdirectory(src)
