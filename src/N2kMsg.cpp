@@ -368,6 +368,24 @@ void tN2kMsg::Add2ByteUDouble(double v, double precision, double UndefVal) {
 }
 
 //*****************************************************************************
+void tN2kMsg::Add2ByteSingle(float v, float precision, float UndefVal) {
+  if (v!=UndefVal) {
+    SetBuf2ByteSingle(v,precision,DataLen,Data);
+  } else {
+    SetBuf2ByteUInt(N2kInt16NA,DataLen,Data);
+  }
+}
+
+//*****************************************************************************
+void tN2kMsg::Add2ByteUSingle(float v, float precision, float UndefVal) {
+  if (v!=UndefVal) {
+    SetBuf2ByteUSingle(v,precision,DataLen,Data);
+  } else {
+    SetBuf2ByteUInt(N2kUInt16NA,DataLen,Data);
+  }
+}
+
+//*****************************************************************************
 void tN2kMsg::Add1ByteDouble(double v, double precision, double UndefVal) {
   if (v!=UndefVal) {
     SetBuf1ByteDouble(v,precision,DataLen,Data);
@@ -563,6 +581,20 @@ double tN2kMsg::Get2ByteDouble(double precision, int &Index, double def) const {
 double tN2kMsg::Get2ByteUDouble(double precision, int &Index, double def) const {
   if (Index+2<=DataLen) {
     return GetBuf2ByteUDouble(precision,Index,Data,def);
+  } else return def;
+}
+
+//*****************************************************************************
+float tN2kMsg::Get2ByteSingle(float precision, int &Index, float def) const {
+  if (Index+2<=DataLen) {
+    return GetBuf2ByteSingle(precision,Index,Data,def);
+  } else return def;
+}
+
+//*****************************************************************************
+float tN2kMsg::Get2ByteUSingle(float precision, int &Index, float def) const {
+  if (Index+2<=DataLen) {
+    return GetBuf2ByteUSingle(precision,Index,Data,def);
   } else return def;
 }
 
@@ -970,6 +1002,22 @@ double GetBuf2ByteUDouble(double precision, int &index, const unsigned char *buf
 }
 
 //*****************************************************************************
+float GetBuf2ByteSingle(float precision, int &index, const unsigned char *buf, float def) {
+  int16_t vl = GetBuf<int16_t>(2, index, buf);
+  if (vl==N2kInt16NA) return def;
+
+  return vl * precision;
+}
+
+//*****************************************************************************
+float GetBuf2ByteUSingle(float precision, int &index, const unsigned char *buf, float def) {
+  uint16_t vl = GetBuf<uint16_t>(2, index, buf);
+  if (vl==N2kUInt16NA) return def;
+
+  return vl * precision;
+}
+
+//*****************************************************************************
 double GetBuf8ByteDouble(double precision, int &index, const unsigned char *buf, double def) {
   int64_t vl = GetBuf<int64_t>(8, index, buf);
   if (vl==0x7fffffffffffffffLL) return def;
@@ -1046,6 +1094,20 @@ void SetBuf2ByteDouble(double v, double precision, int &index, unsigned char *bu
 //*****************************************************************************
 void SetBuf2ByteUDouble(double v, double precision, int &index, unsigned char *buf) {
   double vd=round((v/precision));
+  uint16_t vi = (vd>=0 && vd<N2kUInt16OR)?(uint16_t)vd:N2kUInt16OR;
+  SetBuf(vi, 2, index, buf);
+}
+
+//*****************************************************************************
+void SetBuf2ByteSingle(float v, float precision, int &index, unsigned char *buf) {
+  float vd=roundf((v/precision));
+  int16_t vi = (vd>=N2kInt16Min && vd<N2kInt16OR)?(int16_t)vd:N2kInt16OR;
+  SetBuf(vi, 2, index, buf);
+}
+
+//*****************************************************************************
+void SetBuf2ByteUSingle(float v, float precision, int &index, unsigned char *buf) {
+  float vd=roundf((v/precision));
   uint16_t vi = (vd>=0 && vd<N2kUInt16OR)?(uint16_t)vd:N2kUInt16OR;
   SetBuf(vi, 2, index, buf);
 }

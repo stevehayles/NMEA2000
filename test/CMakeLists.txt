@@ -31,6 +31,7 @@ add_test(Seasmart SeasmartTests)
 
 add_executable(N2kMessagesTests 
   N2kMessagesTest.cpp
+  N2kSinglePrecisionTest.cpp
   millis.cpp
 )
 

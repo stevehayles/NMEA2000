@@ -293,6 +293,11 @@ void SetBuf3ByteUDouble(double v, double precision, int &index, unsigned char *b
 void SetBuf2ByteDouble(double v, double precision, int &index, unsigned char *buf);
 
 /**************************************************************************//**
+ * \brief Single precision equivalent of \ref SetBuf2ByteDouble.
+ */
+void SetBuf2ByteSingle(float v, float precision, int &index, unsigned char *buf);
+
+/**************************************************************************//**
  * \brief Writes a double unsigned value into a byte array buffer using 2 bytes
  *
  * To write a double value into a certain position of an byte array buffer
@@ -309,6 +314,11 @@ void SetBuf2ByteDouble(double v, double precision, int &index, unsigned char *bu
  * \param buf       Pointer to the byte array buffer 
  */
 void SetBuf2ByteUDouble(double v, double precision, int &index, unsigned char *buf);
+
+/**************************************************************************//**
+ * \brief Unsigned single precision equivalent of \ref SetBuf2ByteUDouble.
+ */
+void SetBuf2ByteUSingle(float v, float precision, int &index, unsigned char *buf);
 
 /**************************************************************************//**
  * \brief Writes a double signed value into a byte array buffer using 1 byte
@@ -574,6 +584,18 @@ double GetBuf2ByteDouble(double precision, int &index, const unsigned char *buf,
  * \return      double value
  */
 double GetBuf2ByteUDouble(double precision, int &index, const unsigned char *buf, double def=-1);
+
+/**************************************************************************//**
+ * \brief Extracts a signed 2-byte fixed point value as single precision.
+ * \see GetBuf2ByteDouble
+ */
+float GetBuf2ByteSingle(float precision, int &index, const unsigned char *buf, float def=N2kFloatNA);
+
+/**************************************************************************//**
+ * \brief Extracts an unsigned 2-byte fixed point value as single precision.
+ * \see GetBuf2ByteUDouble
+ */
+float GetBuf2ByteUSingle(float precision, int &index, const unsigned char *buf, float def=N2kFloatNA);
 
 /**************************************************************************//**
  * \brief Extracts 3 bytes out of the given buffer
@@ -919,6 +941,18 @@ public:
   void Add2ByteUDouble(double v, double precision, double UndefVal=N2kDoubleNA);
 
   /************************************************************************//**
+   * \brief Add a signed single precision value using 2-byte fixed point.
+   * \see Add2ByteDouble
+   */
+  void Add2ByteSingle(float v, float precision, float UndefVal=N2kFloatNA);
+
+  /************************************************************************//**
+   * \brief Add an unsigned single precision value using 2-byte fixed point.
+   * \see Add2ByteUDouble
+   */
+  void Add2ByteUSingle(float v, float precision, float UndefVal=N2kFloatNA);
+
+  /************************************************************************//**
    * \brief Add double value to the buffer using 2 bytes
    * 
    * The fixed point integer mechanism is used.
@@ -1177,6 +1211,18 @@ public:
   * \return        double value
   */
   double Get2ByteUDouble(double precision, int &Index, double def=N2kDoubleNA) const;
+
+  /************************************************************************//**
+   * \brief Get a signed 2-byte fixed point value as single precision.
+   * \see Get2ByteDouble
+   */
+  float Get2ByteSingle(float precision, int &Index, float def=N2kFloatNA) const;
+
+  /************************************************************************//**
+   * \brief Get an unsigned 2-byte fixed point value as single precision.
+   * \see Get2ByteUDouble
+   */
+  float Get2ByteUSingle(float precision, int &Index, float def=N2kFloatNA) const;
 
   /************************************************************************//**
   * \brief Get a double from 3 bytes out of \ref Data
