@@ -74,6 +74,10 @@ add_executable(N2kSlotAgeTests N2kSlotAgeTest.cpp)
 target_link_libraries(N2kSlotAgeTests nmea2000)
 add_test(N2kSlotAge N2kSlotAgeTests)
 
+add_executable(N2kSendAdmissionTests N2kSendAdmissionTest.cpp)
+target_link_libraries(N2kSendAdmissionTests nmea2000)
+add_test(N2kSendAdmission N2kSendAdmissionTests)
+
 add_executable(SeasmartOverreadTests
   SeasmartOverreadTest.cpp
   millis.cpp

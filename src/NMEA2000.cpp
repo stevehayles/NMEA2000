@@ -1360,13 +1360,20 @@ unsigned long N2ktoCanID(unsigned char priority, unsigned long PGN, unsigned lon
 
 //*****************************************************************************
 bool tNMEA2000::SendFrames()
+{
+  return SendFrames(false);
+}
+
+//*****************************************************************************
+bool tNMEA2000::SendFrames(bool forceNonBlocking)
 { uint16_t temp;
 
   if ( CANSendFrameBuf==0 ) return true; // This can be in case, where inherited class defines own buffering.
 
   while (CANSendFrameBufferRead!=CANSendFrameBufferWrite) {
     temp = (CANSendFrameBufferRead + 1) % MaxCANSendFrames;
-    if ( CANSendFrame(CANSendFrameBuf[temp].id, CANSendFrameBuf[temp].len, CANSendFrameBuf[temp].buf, CANSendFrameBuf[temp].wait_sent) ) {
+    bool wait_sent=forceNonBlocking ? false : CANSendFrameBuf[temp].wait_sent;
+    if ( CANSendFrame(CANSendFrameBuf[temp].id, CANSendFrameBuf[temp].len, CANSendFrameBuf[temp].buf, wait_sent) ) {
       CANSendFrameBufferRead=temp;
       N2kFrameOutDbgStart("Frame unbuffered "); N2kFrameOutDbgln(CANSendFrameBuf[temp].id);
     } else return false;
@@ -1393,6 +1400,41 @@ bool tNMEA2000::SendFrame(unsigned long id, unsigned char len, const unsigned ch
   }
 
   return true;
+}
+
+//*****************************************************************************
+bool tNMEA2000::SendFrameNonBlocking(unsigned long id, unsigned char len, const unsigned char *buf) {
+
+  if ( !SendFrames(true) || !CANSendFrame(id,len,buf,false) ) {
+    tCANSendFrame *Frame=GetNextFreeCANSendFrame();
+    if ( Frame==0 ) {
+      N2kFrameOutDbgStart("Frame failed "); N2kFrameOutDbgln(id);
+      return false;
+    }
+    len=N2kMin<unsigned char>(len,8);
+    Frame->id=id;
+    Frame->len=len;
+    Frame->wait_sent=false;
+    for (int i=0; i<len; i++) Frame->buf[i]=buf[i];
+    N2kFrameOutDbgStart("Frame buffered "); N2kFrameOutDbgln(id);
+  }
+
+  return true;
+}
+
+//*****************************************************************************
+uint16_t tNMEA2000::GetFreeCANSendFrameCount() {
+  if ( CANSendFrameBuf==0 || MaxCANSendFrames==0 ) return 0;
+
+  uint16_t used;
+  if ( CANSendFrameBufferWrite>=CANSendFrameBufferRead ) {
+    used=CANSendFrameBufferWrite-CANSendFrameBufferRead;
+  } else {
+    used=MaxCANSendFrames-(CANSendFrameBufferRead-CANSendFrameBufferWrite);
+  }
+
+  // One slot remains unused to distinguish a full ring from an empty ring.
+  return MaxCANSendFrames-used-1;
 }
 
 #if !defined(N2K_NO_HEARTBEAT_SUPPORT)
@@ -1492,6 +1534,21 @@ void tNMEA2000::SendPendingInformation() {
 // Sends message to N2k bus
 //
 bool tNMEA2000::SendMsg(const tN2kMsg &N2kMsg, int DeviceIndex) {
+  return SendMsgInternal(N2kMsg,DeviceIndex,SendPolicy::Buffered);
+}
+
+//*****************************************************************************
+bool tNMEA2000::SendMsgNonBlocking(const tN2kMsg &N2kMsg, int DeviceIndex) {
+  return SendMsgInternal(N2kMsg,DeviceIndex,SendPolicy::NonBlocking);
+}
+
+//*****************************************************************************
+bool tNMEA2000::SendSingleFrameToDriver(const tN2kMsg &N2kMsg, int DeviceIndex) {
+  return dbMode==dm_None && SendMsgInternal(N2kMsg,DeviceIndex,SendPolicy::DriverOnly);
+}
+
+//*****************************************************************************
+bool tNMEA2000::SendMsgInternal(const tN2kMsg &N2kMsg, int DeviceIndex, SendPolicy policy) {
   if ( dbMode==dm_None ) {
     if ( OpenState!=os_Open ) {
       if ( !(Open() && OpenState==os_Open) ) return false;  // Can not do much
@@ -1523,9 +1580,15 @@ bool tNMEA2000::SendMsg(const tN2kMsg &N2kMsg, int DeviceIndex) {
       N2kMsgDbgStart(" - can ID:"); N2kMsgDbgln(canId);
       if ( IsAddressClaimStarted(DeviceIndex) && N2kMsg.PGN!=N2kPGNIsoAddressClaim ) return false;
 
-      if (N2kMsg.DataLen<=8 && !IsFastPacket(N2kMsg) ) { // We can send single frame
+      if (policy==SendPolicy::DriverOnly) {
+        if ( N2kMsg.DataLen>8 || IsFastPacket(N2kMsg) ||
+             (CANSendFrameBuf && CANSendFrameBufferRead!=CANSendFrameBufferWrite) ) return false;
+        result=CANSendFrame(canId,N2kMsg.DataLen,N2kMsg.Data,false);
+        if (!result) return false;
+      } else if (N2kMsg.DataLen<=8 && !IsFastPacket(N2kMsg) ) { // We can send single frame
           DbgPrintBuf(N2kMsg.DataLen, N2kMsg.Data,true);
-          result=SendFrame(canId, N2kMsg.DataLen, N2kMsg.Data,false);
+          result=policy==SendPolicy::NonBlocking ? SendFrameNonBlocking(canId, N2kMsg.DataLen, N2kMsg.Data)
+                             : SendFrame(canId, N2kMsg.DataLen, N2kMsg.Data,false);
           if (!result && ForwardStream!=0 && ForwardType==tNMEA2000::fwdt_Text) { ForwardStream->print(F("PGN ")); ForwardStream->print(N2kMsg.PGN); ForwardStream->println(F(" send failed")); }
           N2kPrintFreeMemory("SendMsg, single frame");
       } else { // Send it as fast packet in multiple frames
@@ -1538,8 +1601,15 @@ bool tNMEA2000::SendMsg(const tN2kMsg &N2kMsg, int DeviceIndex) {
           unsigned char temp[8]; // {0,0,0,0,0,0,0,0};
           int cur=0;
           int frames=(N2kMsg.DataLen>6 ? (N2kMsg.DataLen-6-1)/7+1+1 : 1 );
-          int Order=GetSequenceCounter(N2kMsg.PGN,DeviceIndex)<<5;
-          result=true;
+          if ( policy==SendPolicy::NonBlocking ) {
+            // Advance the existing FIFO without waiting. Reserve enough ring
+            // space for every frame before emitting any part of this packet.
+            SendFrames(true);
+            result=GetFreeCANSendFrameCount()>=frames;
+          } else {
+            result=true;
+          }
+          int Order=result ? GetSequenceCounter(N2kMsg.PGN,DeviceIndex)<<5 : 0;
           for (int i = 0; i<frames && result; i++) {
               temp[0] = i|Order; //frame counter
               if (i==0) {
@@ -1563,7 +1633,8 @@ bool tNMEA2000::SendMsg(const tN2kMsg &N2kMsg, int DeviceIndex) {
               }
 
               DbgPrintBuf(8,temp,true);
-              result=SendFrame(canId, 8, temp, true);
+              result=policy==SendPolicy::NonBlocking ? SendFrameNonBlocking(canId, 8, temp)
+                                 : SendFrame(canId, 8, temp, true);
               if (!result && ForwardStream!=0 && ForwardType==tNMEA2000::fwdt_Text) {
                 ForwardStream->print(F("PGN ")); ForwardStream->print(N2kMsg.PGN);
                 ForwardStream->print(F(", frame:")); ForwardStream->print(i); ForwardStream->print(F("/")); ForwardStream->print(frames);

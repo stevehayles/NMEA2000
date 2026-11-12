@@ -1169,6 +1169,8 @@ protected:
      * \retval false  Message could not be sent.
      */
     bool SendFrames();
+    /** \brief Sends pending frames without waiting for driver capacity. */
+    bool SendFrames(bool forceNonBlocking);
     /**********************************************************************//**
      * \brief Sends a single CAN frame
      * 
@@ -1184,6 +1186,16 @@ protected:
      * \retval false  failed
      */
     bool SendFrame(unsigned long id, unsigned char len, const unsigned char *buf, bool wait_sent=true);
+
+    /** \brief Sends or buffers one CAN frame without waiting for driver capacity. */
+    bool SendFrameNonBlocking(unsigned long id, unsigned char len, const unsigned char *buf);
+
+    /** \brief Returns usable entries remaining in the circular send buffer. */
+    uint16_t GetFreeCANSendFrameCount();
+
+    enum class SendPolicy { Buffered, NonBlocking, DriverOnly };
+    bool SendMsgInternal(const tN2kMsg &N2kMsg, int DeviceIndex, SendPolicy policy);
+
 
     /*********************************************************************//**
      * \brief Get the Next Free CAN Frame from \ref CANSendFrameBuf
@@ -2686,6 +2698,21 @@ public:
      *                         bus.
      */
     bool SendMsg(const tN2kMsg &N2kMsg, int DeviceIndex=0);
+
+    /*********************************************************************//**
+     * \brief Send a message without waiting for CAN driver capacity
+     *
+     * Fast packets are admitted only when the complete packet can be sent or
+     * stored in the existing library send buffer.
+     *
+     * \retval true  Complete message accepted or buffered successfully.
+     * \retval false Complete message could not be admitted.
+     */
+    bool SendMsgNonBlocking(const tN2kMsg &N2kMsg, int DeviceIndex=0);
+
+    // Offer one frame to the driver without waiting, buffering or overtaking queued traffic.
+    bool SendSingleFrameToDriver(const tN2kMsg &N2kMsg, int DeviceIndex=0);
+
 
     /*********************************************************************//**
      * \brief Parse all incoming Messages
