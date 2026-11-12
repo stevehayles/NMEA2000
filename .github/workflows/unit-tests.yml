@@ -25,7 +25,7 @@ on:
 
   push:
     # Only run on push to main branches, not on pushes that are part of PRs
-    branches: [master, main]
+    branches: [master, main, 'codex/**']
     paths:  # Same file patterns as pull_request
       - ".github/workflows/unit-tests.yml"
       - 'test/**'
