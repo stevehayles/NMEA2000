@@ -1679,10 +1679,11 @@ void tNMEA2000::FindFreeCANMsgIndex(unsigned long PGN, unsigned char Source, uns
 #else
 void tNMEA2000::FindFreeCANMsgIndex(unsigned long PGN, unsigned char Source, unsigned char Destination, uint8_t &MsgIndex) {
 #endif
-  unsigned long OldestMsgTime,CurTime;
-  int OldestIndex;
+  const uint32_t CurTime=N2kMillis();
+  uint32_t OldestAge=0;
+  int OldestIndex=MaxN2kCANMsgs;
 
-  for (MsgIndex=0, CurTime=OldestMsgTime=N2kMillis(), OldestIndex=MaxN2kCANMsgs;
+  for (MsgIndex=0;
        MsgIndex<MaxN2kCANMsgs &&
        !( N2kCANMsgBuf[MsgIndex].FreeMsg ||
          ( N2kCANMsgBuf[MsgIndex].N2kMsg.PGN==PGN
@@ -1694,12 +1695,13 @@ void tNMEA2000::FindFreeCANMsgIndex(unsigned long PGN, unsigned char Source, uns
          )
         );
        MsgIndex++) { // Find free message place
-    if ( N2kIsTimeBefore(N2kCANMsgBuf[MsgIndex].N2kMsg.MsgTime,OldestMsgTime) ) {
+    const uint32_t Age=CurTime-static_cast<uint32_t>(N2kCANMsgBuf[MsgIndex].N2kMsg.MsgTime);
+    if ( Age>=Max_N2kMsgBuf_Time && Age>=OldestAge ) {
       OldestIndex=MsgIndex;
-      OldestMsgTime=N2kCANMsgBuf[MsgIndex].N2kMsg.MsgTime;
+      OldestAge=Age;
     }
   }
-  if ( MsgIndex==MaxN2kCANMsgs && N2kHasElapsed(OldestMsgTime,Max_N2kMsgBuf_Time,CurTime) ) {
+  if ( MsgIndex==MaxN2kCANMsgs && OldestIndex<MaxN2kCANMsgs ) {
     MsgIndex=OldestIndex; // Use the old one, which has timed out
     N2kCANMsgBuf[MsgIndex].FreeMessage();
   }
@@ -2641,6 +2643,15 @@ void tNMEA2000::ParseMessages() {
 
     SendFrames();
     SendPendingInformation();
+    // Retire incomplete messages during quiet polling, before their 32-bit
+    // timestamps can make a full uptime wrap look like a recent frame.
+    const uint32_t now=N2kMillis();
+    for (uint8_t i=0; i<MaxN2kCANMsgs; i++) {
+      if ( !N2kCANMsgBuf[i].FreeMsg &&
+           uint32_t(now-uint32_t(N2kCANMsgBuf[i].N2kMsg.MsgTime))>=Max_N2kMsgBuf_Time ) {
+        N2kCANMsgBuf[i].FreeMessage();
+      }
+    }
 #if defined(DEBUG_NMEA2000_ISR)
     TestISR();
 #endif

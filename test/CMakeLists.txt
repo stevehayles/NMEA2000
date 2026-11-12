@@ -70,6 +70,10 @@ add_executable(N2kGroupFunctionDestructorTests
 target_link_libraries(N2kGroupFunctionDestructorTests catch nmea2000)
 add_test(N2kGroupFunctionDestructor N2kGroupFunctionDestructorTests)
 
+add_executable(N2kSlotAgeTests N2kSlotAgeTest.cpp)
+target_link_libraries(N2kSlotAgeTests nmea2000)
+add_test(N2kSlotAge N2kSlotAgeTests)
+
 add_executable(SeasmartOverreadTests
   SeasmartOverreadTest.cpp
   millis.cpp
