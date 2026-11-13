@@ -710,6 +710,8 @@ tNMEA2000::tNMEA2000() {
   InstallationDescriptionChanged=false;
 #endif
   ForwardStream=0;
+  ForwardCallback=0;
+  ForwardCallbackContext=0;
 
   for (int i=0; i<N2kMessageGroups; i++) {SingleFrameMessages[i]=0; FastPacketMessages[i]=0;}
 
@@ -2194,6 +2196,11 @@ bool tNMEA2000::IsMySource(unsigned char Source) {
 //*****************************************************************************
 void tNMEA2000::ForwardMessage(const tN2kMsg &N2kMsg) {
   if ( !ForwardEnabled() || ( !( ForwardOwnMessages() && IsMySource(N2kMsg.Source) ) && N2kMode==N2km_NodeOnly ) ) return;
+
+  if ( ForwardCallback!=0 ) {
+    ForwardCallback(N2kMsg,ForwardCallbackContext);
+    return;
+  }
 
   switch (ForwardType) {
     case fwdt_Actisense:

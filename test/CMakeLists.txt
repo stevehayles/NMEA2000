@@ -79,6 +79,10 @@ add_executable(N2kSendAdmissionTests N2kSendAdmissionTest.cpp)
 target_link_libraries(N2kSendAdmissionTests nmea2000)
 add_test(N2kSendAdmission N2kSendAdmissionTests)
 
+add_executable(N2kForwardCallbackTests N2kForwardCallbackTest.cpp)
+target_link_libraries(N2kForwardCallbackTests nmea2000)
+add_test(N2kForwardCallback N2kForwardCallbackTests)
+
 add_executable(N2kIsoRequestGuardTests N2kIsoRequestGuardTest.cpp)
 target_link_libraries(N2kIsoRequestGuardTests nmea2000)
 add_test(N2kIsoRequestGuard N2kIsoRequestGuardTests)

@@ -670,6 +670,8 @@ public:
              *  for debugging. */
             fwdt_Text 
           } tForwardType;
+
+  typedef void (*tForwardCallback)(const tN2kMsg &N2kMsg, void *Context);
   
   /************************************************************************//**
    * \enum    tN2kMode
@@ -959,6 +961,8 @@ protected:
     unsigned int ForwardMode; 
     /** \brief  Actual stream to be used for forward messaging*/
     N2kStream *ForwardStream;
+    tForwardCallback ForwardCallback;
+    void *ForwardCallbackContext;
     /** \brief  Pointer to a buffer for Message Handlers*/
     tMsgHandler *MsgHandlers;
 
@@ -2613,6 +2617,17 @@ public:
      * \param _stream Stream to be used for message forwarding
      */
     void SetForwardStream(N2kStream* _stream) { ForwardStream=_stream; }
+
+    /**
+     * Handle eligible forwarded messages synchronously on the caller's thread.
+     * When set, the callback replaces the normal forward stream output. The
+     * message reference is valid only until the callback returns. Register or
+     * remove the callback on the thread that owns message processing.
+     */
+    void SetForwardCallback(tForwardCallback callback, void *context=0) {
+      ForwardCallback=callback;
+      ForwardCallbackContext=context;
+    }
 
     /*********************************************************************//**
      * \brief Read current Forward Stream object
